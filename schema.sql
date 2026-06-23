@@ -1,14 +1,8 @@
 -- EventHub CRM - PostgreSQL Database Schema
--- Designed specifically for the Event Management CRM & Lead Management Systems.
--- Includes: Primary Keys, Foreign Keys, Indexes, Timestamps, and Soft Deletes.
 
--- Enable UUID extension if UUIDs are used (optional, but standard for enterprise)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ============================================================================
--- 1. ROLES & PERMISSIONS
--- ============================================================================
-
+--ROLES & PERMISSIONS
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
@@ -31,10 +25,7 @@ CREATE TABLE role_permissions (
     PRIMARY KEY (role_id, permission_id)
 );
 
--- ============================================================================
 -- 2. USERS
--- ============================================================================
-
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     role_id INTEGER NOT NULL REFERENCES roles(id),
@@ -53,10 +44,7 @@ CREATE INDEX idx_users_role_id ON users(role_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_deleted_at ON users(deleted_at) WHERE deleted_at IS NULL;
 
--- ============================================================================
 -- 3. CONTACTS & ACCOUNTS
--- ============================================================================
-
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
@@ -93,10 +81,7 @@ CREATE INDEX idx_contacts_email ON contacts(email);
 CREATE INDEX idx_contacts_phone ON contacts(phone);
 CREATE INDEX idx_contacts_deleted_at ON contacts(deleted_at) WHERE deleted_at IS NULL;
 
--- ============================================================================
--- 4. LEAD SOURCES
--- ============================================================================
-
+-- 4. LEAD SOURCE
 CREATE TABLE lead_sources (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL, -- e.g., 'Website Form', 'WhatsApp', 'Phone Call', 'Walk-in', 'Referral', 'Social Media', 'Paid Ads', 'Marketplace'
@@ -107,10 +92,7 @@ CREATE TABLE lead_sources (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
 -- 5. LEADS
--- ============================================================================
-
 CREATE TYPE lead_priority_enum AS ENUM ('Low', 'Medium', 'High');
 CREATE TYPE lead_stage_enum AS ENUM ('New Lead', 'Contacted', 'Qualified', 'Proposal Sent', 'Negotiation', 'Won', 'Lost');
 
@@ -127,7 +109,7 @@ CREATE TABLE leads (
     company_name VARCHAR(150),
     
     -- Event Specific Fields
-    event_type VARCHAR(100) NOT NULL, -- e.g., 'Wedding', 'Corporate Conference', 'Exhibition', 'Concert', 'Birthday'
+    event_type VARCHAR(100) NOT NULL, 
     event_date DATE,
     number_of_guests INTEGER,
     preferred_venue VARCHAR(255),
@@ -141,7 +123,7 @@ CREATE TABLE leads (
     priority lead_priority_enum DEFAULT 'Medium',
     status lead_stage_enum DEFAULT 'New Lead',
     notes TEXT,
-    attachments JSONB DEFAULT '[]'::jsonb, -- Array of URLs and metadata for uploaded documents
+    attachments JSONB DEFAULT '[]'::jsonb, 
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -155,10 +137,7 @@ CREATE INDEX idx_leads_status ON leads(status);
 CREATE INDEX idx_leads_event_date ON leads(event_date);
 CREATE INDEX idx_leads_deleted_at ON leads(deleted_at) WHERE deleted_at IS NULL;
 
--- ============================================================================
 -- 6. LEAD SCORING SYSTEM
--- ============================================================================
-
 CREATE TYPE lead_score_category_enum AS ENUM ('Cold', 'Warm', 'Hot');
 
 CREATE TABLE lead_scores (
@@ -178,10 +157,7 @@ CREATE TABLE lead_scores (
 CREATE INDEX idx_lead_scores_lead_id ON lead_scores(lead_id);
 CREATE INDEX idx_lead_scores_total_score ON lead_scores(total_score);
 
--- ============================================================================
 -- 7. LEAD ACTIVITIES & NOTES
--- ============================================================================
-
 CREATE TABLE lead_activities (
     id SERIAL PRIMARY KEY,
     lead_id INTEGER NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
@@ -209,10 +185,8 @@ CREATE TABLE lead_notes (
 CREATE INDEX idx_lead_notes_lead_id ON lead_notes(lead_id);
 CREATE INDEX idx_lead_notes_deleted_at ON lead_notes(deleted_at) WHERE deleted_at IS NULL;
 
--- ============================================================================
--- 8. FOLLOW-UPS & MEETINGS
--- ============================================================================
 
+-- 8. FOLLOW-UPS & MEETINGS
 CREATE TYPE followup_status_enum AS ENUM ('Pending', 'Completed', 'Missed', 'Rescheduled');
 CREATE TYPE followup_type_enum AS ENUM ('Call', 'WhatsApp', 'Email', 'Meeting');
 
@@ -255,10 +229,8 @@ CREATE TABLE meetings (
 CREATE INDEX idx_meetings_lead_id ON meetings(lead_id);
 CREATE INDEX idx_meetings_start_time ON meetings(start_time);
 
--- ============================================================================
--- 9. TASKS & COMMENTS
--- ============================================================================
 
+-- 9. TASKS & COMMENTS
 CREATE TYPE task_priority_enum AS ENUM ('Low', 'Medium', 'High');
 CREATE TYPE task_status_enum AS ENUM ('To Do', 'In Progress', 'Completed');
 
@@ -293,10 +265,7 @@ CREATE TABLE task_comments (
 
 CREATE INDEX idx_task_comments_task_id ON task_comments(task_id);
 
--- ============================================================================
 -- 10. QUOTATIONS
--- ============================================================================
-
 CREATE TYPE quotation_status_enum AS ENUM ('Draft', 'Sent', 'Approved', 'Rejected', 'Expired');
 
 CREATE TABLE quotations (
@@ -308,7 +277,7 @@ CREATE TABLE quotations (
     discount_amount NUMERIC(15, 2) DEFAULT 0.00,
     net_amount NUMERIC(15, 2) DEFAULT 0.00,
     tax_amount NUMERIC(15, 2) DEFAULT 0.00,
-    items JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of items: [{description: "Catering", price: 5000, quantity: 1}]
+    items JSONB NOT NULL DEFAULT '[]'::jsonb, 
     status quotation_status_enum DEFAULT 'Draft',
     created_by_id INTEGER NOT NULL REFERENCES users(id),
     approved_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -324,10 +293,8 @@ CREATE INDEX idx_quotations_lead_id ON quotations(lead_id);
 CREATE INDEX idx_quotations_number ON quotations(quotation_number);
 CREATE INDEX idx_quotations_deleted_at ON quotations(deleted_at) WHERE deleted_at IS NULL;
 
--- ============================================================================
--- 11. NOTIFICATIONS
--- ============================================================================
 
+-- 11. NOTIFICATIONS
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -343,9 +310,7 @@ CREATE TABLE notifications (
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_is_read ON notifications(is_read) WHERE is_read = FALSE;
 
--- ============================================================================
 -- 12. AUDIT LOGS
--- ============================================================================
 
 CREATE TABLE audit_logs (
     id SERIAL PRIMARY KEY,
@@ -362,9 +327,7 @@ CREATE TABLE audit_logs (
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
 
--- ============================================================================
--- TRIGGER FUNCTIONS FOR TIMESTAMPS
--- ============================================================================
+
 
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$
@@ -374,7 +337,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Add triggers for auto-updating updated_at columns
+
 CREATE TRIGGER update_roles_modtime BEFORE UPDATE ON roles FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_permissions_modtime BEFORE UPDATE ON permissions FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_users_modtime BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
