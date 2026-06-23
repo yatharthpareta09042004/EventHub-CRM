@@ -1,5 +1,4 @@
-// EventHub CRM Sanity & Integration Verification Script
-// Run via Node.js to check file structure, JS syntax, database connection, and API CRUD operations.
+
 
 const fs = require('fs');
 const path = require('path');
@@ -29,7 +28,7 @@ if (!allExist) {
     process.exit(1);
 }
 
-// 2. Syntax check JS files
+
 const jsFiles = ['app.js', 'server.js', 'db.js'];
 jsFiles.forEach(file => {
     try {
@@ -42,7 +41,7 @@ jsFiles.forEach(file => {
     }
 });
 
-// 3. Inspect HTML contents for correct references
+
 const htmlContent = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
 if (htmlContent.includes('style.css') && htmlContent.includes('app.js')) {
     console.log('[PASS] index.html correctly references style.css and app.js.');
@@ -50,11 +49,11 @@ if (htmlContent.includes('style.css') && htmlContent.includes('app.js')) {
     console.warn('[WARNING] index.html might be missing style.css or app.js script tags.');
 }
 
-// 4. Test Database Connection & API Server CRUD Operations
+
 async function runIntegrationTests() {
     console.log('\n--- Running Backend & DB Integration Tests ---');
 
-    // Spawn server process
+    
     const serverProcess = spawn('node', ['server.js'], {
         cwd: __dirname,
         env: { ...process.env, PORT: '8085' }
@@ -63,7 +62,7 @@ async function runIntegrationTests() {
     serverProcess.stdout.on('data', (data) => {
         const text = data.toString();
         if (text.includes('Server is running') || text.includes('Database seeded')) {
-            // Log server info
+            
             console.log(`[SERVER] ${text.trim()}`);
         }
     });
@@ -72,13 +71,13 @@ async function runIntegrationTests() {
         console.error(`[SERVER ERROR] ${data.toString().trim()}`);
     });
 
-    // Wait for server to start and seed database
+    
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     let testsFailed = false;
 
     try {
-        // Test 1: Get Users
+        
         console.log('Testing GET /api/users...');
         const usersRes = await fetch('http://localhost:8085/api/users');
         if (usersRes.status !== 200) throw new Error(`GET /api/users returned status ${usersRes.status}`);
@@ -86,7 +85,7 @@ async function runIntegrationTests() {
         if (!Array.isArray(users) || users.length === 0) throw new Error('GET /api/users did not return expected array');
         console.log(`[PASS] GET /api/users returned ${users.length} users successfully.`);
 
-        // Test 2: Get Leads
+        
         console.log('Testing GET /api/leads...');
         const leadsRes = await fetch('http://localhost:8085/api/leads');
         if (leadsRes.status !== 200) throw new Error(`GET /api/leads returned status ${leadsRes.status}`);
@@ -94,7 +93,7 @@ async function runIntegrationTests() {
         if (!Array.isArray(leads) || leads.length === 0) throw new Error('GET /api/leads did not return expected array');
         console.log(`[PASS] GET /api/leads returned ${leads.length} leads successfully.`);
 
-        // Test 3: Create Lead (CRUD - Create)
+        
         console.log('Testing POST /api/leads...');
         const testLeadPayload = {
             fullName: "Integration Test Lead",
@@ -126,7 +125,7 @@ async function runIntegrationTests() {
         if (!testLeadId) throw new Error('POST /api/leads response did not contain created lead ID');
         console.log(`[PASS] Lead created successfully with ID: ${testLeadId}`);
 
-        // Test 4: Update Lead (CRUD - Update)
+        
         console.log(`Testing PUT /api/leads/${testLeadId}...`);
         const updatedLeadPayload = {
             ...testLeadPayload,
@@ -141,7 +140,7 @@ async function runIntegrationTests() {
         if (updateRes.status !== 200) throw new Error(`PUT /api/leads/${testLeadId} returned status ${updateRes.status}`);
         console.log(`[PASS] Lead updated successfully.`);
 
-        // Test 5: Verify stage update was reflected in database (CRUD - Read updated)
+       
         const checkRes = await fetch('http://localhost:8085/api/leads');
         const checkLeads = await checkRes.json();
         const found = checkLeads.find(l => l.id === testLeadId);
@@ -151,7 +150,7 @@ async function runIntegrationTests() {
         }
         console.log(`[PASS] Database state verified: stage correctly set to 'Qualified' and budget to $50000.`);
 
-        // Test 6: Delete Lead (CRUD - Delete)
+        
         console.log(`Testing DELETE /api/leads/${testLeadId}...`);
         const deleteRes = await fetch(`http://localhost:8085/api/leads/${testLeadId}`, {
             method: 'DELETE'
@@ -159,7 +158,7 @@ async function runIntegrationTests() {
         if (deleteRes.status !== 200) throw new Error(`DELETE /api/leads/${testLeadId} returned status ${deleteRes.status}`);
         console.log(`[PASS] Lead deleted successfully.`);
 
-        // Test 7: Verify lead was soft-deleted
+        
         const checkAfterDeleteRes = await fetch('http://localhost:8085/api/leads');
         const checkAfterDeleteLeads = await checkAfterDeleteRes.json();
         const deletedFound = checkAfterDeleteLeads.find(l => l.id === testLeadId);
@@ -171,7 +170,7 @@ async function runIntegrationTests() {
         console.error(err.message || err);
         testsFailed = true;
     } finally {
-        // Kill the server process
+
         console.log('Stopping test server...');
         serverProcess.kill();
     }
